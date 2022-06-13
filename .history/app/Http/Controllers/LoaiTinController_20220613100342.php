@@ -1,0 +1,140 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\LoaiTinModel;
+use App\Models\TheLoaiModel;
+use Illuminate\Support\Facades\Auth;
+use App\Policies\LoaiTinPolicy;
+
+class LoaiTinController extends Controller
+{
+    public function getDanhSach(){
+
+        $user = Auth::user();
+     
+        // load article
+        $loaitin = LoaiTinModel::all();
+         
+        if ($user->can('getDanhSach', $loaitin)) {
+          echo "Current logged in user is allowed to update the Article: {$loaitin->id}";
+          
+        } else {
+          echo 'Not Authorized.';
+        }
+      
+    // $loaitin = LoaiTinModel::all();
+    return view('admin.loaitin.danhsach', ['loaitin'=>$loaitin]);
+    }
+
+
+
+    public function getThem(){
+  // get current logged in user
+        $user = Auth::user();
+        
+        if ($user->can('getThem', LoaiTinModel::class)) {
+            echo 'Current logged in user is allowed to create new articles.';
+        } else {
+            echo 'Not Authorized';
+        }
+
+        exit;
+
+        
+        $theloai = TheLoaiModel::all();
+        return view('admin.loaitin.them', ['theloai'=>$theloai]);
+    }
+
+
+
+    public function postThem(Request $request){
+        $this->validate($request,
+        ['Ten' => 'required|unique:loai_tin_models,Ten|min:3|max:100',
+        'TheLoai'=>"required",
+        'TenKhongDau' =>"required"
+        ],
+        [
+            'Ten.required'=>'Bạn chưa nhập tên thể loại',
+            'Ten.unique'=>'Tên loại tin đã tồn tại',
+            'TenKhongDau.required'=>'Bạn chưa nhập tên  loại tin không dấu',
+            'Ten.min'=>'Tên loại tin phải có độ dài từ 3 cho đến 198 ký tự',
+            'Ten.max'=>'Tên loại tin phải có độ dài từ 3 cho đến 100 ký tự',
+        ]);
+         $loaitin = new LoaiTinModel;
+         $loaitin ->Ten = $request->Ten;
+         $loaitin ->TenKhongDau = $request->TenKhongDau;
+         $loaitin ->idTheLoai = $request->TheLoai;
+         $loaitin->save();
+         return redirect('admin/loaitin/them')->with('thongbao','Them thanh cong');
+    }
+
+
+
+
+    public function getSua($id){   
+       
+
+        $theloai = TheLoaiModel::all();     
+        $loaitin = LoaiTinModel::query()->where('TenKhongDau', $id)->first();
+        return view('admin.loaitin.sua', ['loaitin'=>$loaitin, 'theloai'=>$theloai]);
+    }
+
+
+
+    public function postSua(Request $request,$id){
+        $user = Auth::user();
+ 
+        // load article
+        $loaitin = LoaiTinModel::find(1);
+     
+        if ($user->can('getSua', $loaitin)) {
+          echo "Current logged in user is allowed to update the Article: {$loaitin->id}";
+        } else {
+          echo 'Not Authorized.';
+        }
+
+
+
+        $this->validate($request,
+        ['Ten' => "required|min:3|max:100",
+        'TheLoai'=>"required",
+        'TenKhongDau' =>"required|min:3"
+        ],
+        [
+            'Ten.required'=>'Bạn chưa nhập tên thể loại',
+            
+            'TenKhongDau.required'=>'Bạn chưa nhập tên  loại tin không dấu',
+            'Ten.min'=>'Tên loại tin phải có độ dài từ 3 cho đến 198 ký tự',
+            'Ten.max'=>'Tên loại tin phải có độ dài từ 3 cho đến 100 ký tự',
+        ]);
+         $loaitin = LoaiTinModel::find($id);
+         $loaitin ->Ten = $request->Ten;
+         $loaitin ->TenKhongDau = $request->TenKhongDau;
+         $loaitin ->idTheLoai = $request->TheLoai;
+         $loaitin->save();
+         return redirect('admin/loaitin/sua/'.$id)->with('thongbao','Sửa thanh cong');
+    }
+
+
+
+    public function getXoa($id){
+        // get current logged in user
+    $user = Auth::user();
+     
+    // load article
+    $loaitin = LoaiTinModel::find(1);
+     
+    if ($user->can('getXoa', $loaitin)) {
+      echo "Current logged in user is allowed to delete the Article: {$loaitin->id}";
+    } else {
+      echo 'Not Authorized.';
+    }
+
+
+        $loaitin = LoaiTinModel::find($id);
+        $loaitin-> delete();
+        return redirect('admin/loaitin/danhsach')->with('thongbao','Xóa Thành công');
+    }
+}
